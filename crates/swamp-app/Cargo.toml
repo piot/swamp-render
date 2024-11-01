@@ -2,6 +2,7 @@
 name = "swamp-app"
 version = "0.0.1"
 edition = "2021"
+license = "MIT"
 description = "Application management for 2D pixel perfect sprite rendering"
 repository = "https://github.com/piot/swamp-render"
 categories = ["game-development"]
