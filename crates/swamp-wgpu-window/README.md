@@ -1,4 +1,4 @@
-# swamp-wgpu-window
+# swamp-wgpu-window 🐊
 
 [![Crates.io](https://img.shields.io/crates/v/swamp-wgpu-window)](https://crates.io/crates/swamp-wgpu-window)
 [![Documentation](https://docs.rs/swamp-wgpu-window/badge.svg)](https://docs.rs/swamp-wgpu-window)
