@@ -2,6 +2,7 @@
 name = "swamp-wgpu-window"
 version = "0.0.1"
 edition = "2021"
+license = "MIT"
 description = "creating and managing a window with rendering surfaces using winit and wgpu"
 repository = "https://github.com/piot/swamp-render"
 categories = ["game-development"]
