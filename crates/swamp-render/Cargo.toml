@@ -2,6 +2,10 @@
 name = "swamp-render"
 version = "0.0.1"
 edition = "2021"
+description = "render pixel perfect 2D sprites"
+repository = "https://github.com/piot/swamp-render"
+categories = ["game-development"]
+keywords = ["game", "render"]
 
 [dependencies]
 log = "0.4.22"

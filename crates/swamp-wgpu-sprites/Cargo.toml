@@ -2,7 +2,7 @@
 name = "swamp-wgpu-sprites"
 version = "0.0.1"
 edition = "2021"
-description = "Swamp wgpu sprite utility functions"
+description = "wgpu sprite utility functions"
 repository = "https://github.com/piot/swamp-render"
 categories = ["game-development"]
 keywords = ["game", "render", "sprites"]
