@@ -4,10 +4,220 @@
  */
 
 use bytemuck::{Pod, Zeroable};
+use std::ops::{Add, Index, Mul};
 use wgpu::util::DeviceExt;
 use wgpu::{
     BindGroupLayout, Buffer, PipelineLayout, RenderPipeline, Sampler, ShaderModule, TextureFormat,
 };
+
+#[derive(Copy, Clone)]
+pub struct Mx4([FVec4; 4]);
+impl Mx4 {
+    #[inline]
+    pub fn from_scale(x: f32, y: f32, z: f32) -> Self {
+        Self::from([
+            [x, 0.0, 0.0, 0.0],
+            [0.0, y, 0.0, 0.0],
+            [0.0, 0.0, z, 0.0],
+            [0.0, 0.0, 0.0, 1.0],
+        ])
+    }
+
+    #[inline]
+    pub fn from_translation(x: f32, y: f32, z: f32) -> Self {
+        Self::from([
+            [1.0, 0.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0],
+            [x, y, z, 1.0],
+        ])
+    }
+}
+
+impl From<[f32; 4]> for FVec4 {
+    fn from(v: [f32; 4]) -> Self {
+        Self(v)
+    }
+}
+
+impl From<[[f32; 4]; 4]> for Mx4 {
+    fn from(v: [[f32; 4]; 4]) -> Self {
+        Self([v[0].into(), v[1].into(), v[2].into(), v[3].into()])
+    }
+}
+
+impl Index<usize> for Mx4 {
+    type Output = FVec4;
+
+    #[inline]
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.0[index]
+    }
+}
+
+impl Mul<f32> for FVec4 {
+    type Output = FVec4;
+
+    fn mul(self, rhs: f32) -> Self::Output {
+        Self([self[0] * rhs, self[1] * rhs, self[2] * rhs, self[3] * rhs])
+    }
+}
+
+impl Add<Self> for FVec4 {
+    type Output = FVec4;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Self([
+            self.0[0] + rhs.0[0],
+            self.0[1] + rhs.0[1],
+            self.0[2] + rhs.0[2],
+            self.0[3],
+        ])
+    }
+}
+
+impl Mul<Self> for Mx4 {
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        let a = self[0];
+        let b = self[1];
+        let c = self[2];
+        let d = self[3];
+
+        Self([
+            a * rhs[0][0] + b * rhs[0][1] + c * rhs[0][2] + d * rhs[0][3],
+            a * rhs[1][0] + b * rhs[1][1] + c * rhs[1][2] + d * rhs[1][3],
+            a * rhs[2][0] + b * rhs[2][1] + c * rhs[2][2] + d * rhs[2][3],
+            a * rhs[3][0] + b * rhs[3][1] + c * rhs[3][2] + d * rhs[3][3],
+        ])
+    }
+}
+
+#[derive(Copy, Clone)]
+pub struct FVec4(pub [f32; 4]);
+
+impl Index<usize> for FVec4 {
+    type Output = f32;
+
+    #[inline]
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.0[index]
+    }
+}
+
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub struct SpriteUniform {
+    model: Mx4, // Transformation matrix
+    tex_coords: FVec4,
+}
+
+unsafe impl Pod for SpriteUniform {}
+unsafe impl Zeroable for SpriteUniform {}
+
+impl SpriteUniform {
+    pub fn new(model: Mx4, tex_coords: FVec4) -> Self {
+        Self { model, tex_coords }
+    }
+}
+
+/* CREATE SPRITE UNIFORM
+
+// Create a uniform buffer for a single sprite
+let sprite_uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+    label: Some("Sprite Uniform Buffer"),
+    contents: bytemuck::cast_slice(&[SpriteUniform {
+        model: Matrix4::identity().into(),
+        tex_coords: [0.0, 0.0, 1.0, 1.0],
+    }]),
+    usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+});
+
+// Create bind group layout for sprite uniforms
+let sprite_uniform_bind_group_layout =
+    device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        label: Some("Sprite Uniform Bind Group Layout"),
+        entries: &[wgpu::BindGroupLayoutEntry {
+            binding: 0,
+            visibility: wgpu::ShaderStages::VERTEX,
+            ty: wgpu::BindingType::Buffer {
+                ty: wgpu::BufferBindingType::Uniform,
+                has_dynamic_offset: false,
+                min_binding_size: None,
+            },
+            count: None,
+        }],
+    });
+
+// Create bind group for sprite uniforms
+let sprite_uniform_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+    label: Some("Sprite Uniform Bind Group"),
+    layout: &sprite_uniform_bind_group_layout,
+    entries: &[wgpu::BindGroupEntry {
+        binding: 0,
+        resource: sprite_uniform_buffer.as_entire_binding(),
+    }],
+});
+
+ */
+
+/*
+struct Uniforms {
+    projection: mat4x4<f32>;
+};
+
+@group(0) @binding(0)
+var<uniform> uniforms: Uniforms;
+
+struct SpriteUniform {
+    model: mat4x4<f32>;
+    tex_coords: vec4<f32>;
+};
+
+@group(1) @binding(0)
+var<uniform> sprite_uniform: SpriteUniform;
+
+struct VertexInput {
+    @location(0) position: vec2<f32>;
+    @location(1) tex_coords: vec2<f32>;
+};
+
+struct VertexOutput {
+    @builtin(position) position: vec4<f32>;
+    @location(0) tex_coords: vec2<f32>;
+};
+
+@vertex
+fn vs_main(input: VertexInput) -> VertexOutput {
+    var output: VertexOutput;
+
+    // Apply model and projection transformations
+    let pos = uniforms.projection * sprite_uniform.model * vec4<f32>(input.position, 0.0, 1.0);
+    output.position = pos;
+    output.tex_coords = input.tex_coords * sprite_uniform.tex_coords.xy + sprite_uniform.tex_coords.zw;
+
+    return output;
+}
+ */
+
+/*
+@group(1) @binding(1)
+var texture0: texture_2d<f32>;
+
+@group(1) @binding(2)
+var sampler0: sampler;
+
+struct FragmentInput {
+    @location(0) tex_coords: vec2<f32>;
+};
+
+@fragment
+fn fs_main(input: FragmentInput) -> @location(0) vec4<f32> {
+    let color = textureSample(texture0, sampler0, input.tex_coords);
+    return color;
+}
+ */
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
@@ -83,8 +293,7 @@ impl SpriteInfo {
         let fragment_shader =
             swamp_wgpu::create_shader_module(device, "sprite fragment", fragment_shader_source);
 
-        let bind_group_layout =
-            swamp_wgpu::create_bind_group_layout(device, "sprite bind group layout");
+        let bind_group_layout = create_sprite_bind_group_layout(device, "sprite bind group layout");
         let default_layout = swamp_wgpu::create_pipeline_layout(
             device,
             "sprite pipeline layout",
@@ -172,6 +381,40 @@ pub fn create_sprite_index_buffer(device: &wgpu::Device, label: &str) -> Buffer 
         label: Some(label),
         contents: bytemuck::cast_slice(INDICES),
         usage: wgpu::BufferUsages::INDEX,
+    })
+}
+
+pub fn create_sprite_bind_group_layout(device: &wgpu::Device, label: &str) -> BindGroupLayout {
+    device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        label: Some(label),
+        entries: &[
+            wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::VERTEX,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            },
+            wgpu::BindGroupLayoutEntry {
+                binding: 1,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Texture {
+                    multisampled: false,
+                    view_dimension: wgpu::TextureViewDimension::D2,
+                    sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                },
+                count: None,
+            },
+            wgpu::BindGroupLayoutEntry {
+                binding: 2,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                count: None,
+            },
+        ],
     })
 }
 

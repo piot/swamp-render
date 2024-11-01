@@ -4,7 +4,10 @@
  */
 
 use log::info;
-use wgpu::{BindGroup, BindGroupLayout, PipelineLayout, Sampler, ShaderModule, Texture};
+use wgpu::util::DeviceExt;
+use wgpu::{BindGroup, BindGroupLayout, Buffer, PipelineLayout, Sampler, ShaderModule, Texture};
+
+use bytemuck::{Pod, Zeroable};
 
 pub fn create_shader_module(
     device: &wgpu::Device,
@@ -27,30 +30,6 @@ pub fn create_pipeline_layout(
         label: Some(label),
         bind_group_layouts: &[bind_group_layout],
         push_constant_ranges: &[],
-    })
-}
-
-pub fn create_bind_group_layout(device: &wgpu::Device, label: &str) -> BindGroupLayout {
-    device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-        label: Some(label),
-        entries: &[
-            wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStages::FRAGMENT,
-                ty: wgpu::BindingType::Texture {
-                    multisampled: false,
-                    view_dimension: wgpu::TextureViewDimension::D2,
-                    sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                },
-                count: None,
-            },
-            wgpu::BindGroupLayoutEntry {
-                binding: 1,
-                visibility: wgpu::ShaderStages::FRAGMENT,
-                ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                count: None,
-            },
-        ],
     })
 }
 
@@ -90,7 +69,7 @@ pub fn create_texture(device: &wgpu::Device, width: u32, height: u32) -> Texture
     })
 }
 
-pub fn create_bind_group(
+pub fn create_texture_and_sampler_bind_group(
     device: &wgpu::Device,
     bind_group_layout: &BindGroupLayout,
     sampler: &Sampler,
@@ -111,5 +90,64 @@ pub fn create_bind_group(
             },
         ],
         label: Some(label),
+    })
+}
+
+/// A struct that holds uniform data to be passed to shaders.
+/// In this case, it contains the combined view-projection matrix.
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub struct Uniforms {
+    pub view_proj: [[f32; 4]; 4],
+}
+
+unsafe impl Pod for Uniforms {}
+unsafe impl Zeroable for Uniforms {}
+
+pub fn create_uniform_buffer(device: &wgpu::Device, label: &str) -> Buffer {
+    let uniforms = Uniforms {
+        view_proj: [[0.0; 4]; 4],
+    };
+
+    device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: Some(label),
+        contents: bytemuck::cast_slice(&[uniforms]),
+        usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+    })
+}
+
+pub fn create_uniform_bind_group_layout(device: &wgpu::Device, label: &str) -> BindGroupLayout {
+    device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        label: Some(label),
+        entries: &[
+            // View-Projection Matrix
+            wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::VERTEX,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            },
+        ],
+    })
+}
+
+// Create Uniform Bind Group
+pub fn create_uniform_bind_group(
+    device: &wgpu::Device,
+    bind_group_layout: &BindGroupLayout,
+    uniform_buffer: &Buffer,
+    label: &str,
+) -> BindGroup {
+    device.create_bind_group(&wgpu::BindGroupDescriptor {
+        label: Some(label),
+        layout: bind_group_layout,
+        entries: &[wgpu::BindGroupEntry {
+            binding: 0,
+            resource: uniform_buffer.as_entire_binding(),
+        }],
     })
 }
