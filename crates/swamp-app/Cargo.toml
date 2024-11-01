@@ -12,7 +12,7 @@ keywords = ["game", "render"]
 swamp-render = { path = "../swamp-render", version = "0.0.1" }
 swamp-wgpu-window = { path = "../swamp-wgpu-window", version = "0.0.1" }
 
-swamp-window = { path = "../../../../piot/swamp-window", version = "0.0.2" }
+swamp-window = { path = "../../../../piot/swamp-window", version = "0.0.3" }
 
 winit = "0.30.5"
 async-trait = "0.1.83"
