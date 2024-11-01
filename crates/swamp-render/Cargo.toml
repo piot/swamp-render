@@ -1,0 +1,11 @@
+[package]
+name = "swamp-render"
+version = "0.0.1"
+edition = "2021"
+
+[dependencies]
+log = "0.4.22"
+int_math = { path = "../../../int-math-rs", version = "0.0.2" }
+swamp-wgpu-sprites = { path = "../swamp-wgpu-sprites", version = "0.0.1" }
+swamp-wgpu = { path = "../swamp-wgpu", version = "0.0.1" }
+wgpu = "23.0.0"

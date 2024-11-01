@@ -1,0 +1,17 @@
+[package]
+name = "swamp-app"
+version = "0.0.1"
+edition = "2021"
+
+[dependencies]
+swamp-render = { path = "../swamp-render", version = "0.0.1" }
+swamp-wgpu-window = { path = "../swamp-wgpu-window", version = "0.0.1" }
+
+swamp-window = { path = "../../../../piot/swamp-window", version = "0.0.2" }
+
+winit = "0.30.5"
+async-trait = "0.1.83"
+log = "0.4.22"
+pollster = "0.4.0"
+
+

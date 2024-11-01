@@ -1,0 +1,13 @@
+[package]
+name = "swamp-wgpu"
+version = "0.0.1"
+edition = "2021"
+license = "MIT"
+description = "Swamp wgpu utility functions"
+repository = "https://github.com/piot/swamp-render"
+categories = ["game-development"]
+keywords = ["game", "render"]
+
+[dependencies]
+wgpu = "23.0.0"
+log = "0.4.22"
